@@ -9,7 +9,6 @@
     body {
         margin: 0;
         font-family: 'Georgia', serif;
-        /* Couleurs plus nuancées : Violet profond et Framboise */
         background: linear-gradient(135deg, #2d0b1e 0%, #6d1d3d 50%, #b23a48 100%);
         background-attachment: fixed;
         color: #f2f2f2;
@@ -25,7 +24,7 @@
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background: url('Toff.jpg') center/cover no-repeat;
-        opacity: 0.3; /* Un peu plus sombre pour l'élégance */
+        opacity: 0.3;
         filter: blur(4px);
         z-index: -1;
     }
@@ -138,7 +137,7 @@
     <div id="gageSection" class="hidden">
         <h2 style="color: #ffb3c1;">Hop hop hop ! 😏</h2>
         <p id="gageMessage">Tu es bien trop gourmande... Pour débloquer une autre carte, tu dois me promettre quelque chose (photo, vidéo, gage...).</p>
-        <textarea id="gageText" placeholder="Alors, Handsome attend ta promesse..."></textarea>
+        <textarea id="gageText" name="promesse" placeholder="Alors, Handsome attend ta promesse..."></textarea>
         <br>
         <button onclick="unlock()">Je le promets</button>
     </div>
@@ -147,8 +146,8 @@
         <h2 style="color: #ffb3c1;">Je me lance...</h2>
         <p>Bon, je stresse un peu mais...</p>
         <p style="font-size: 1.3rem; margin: 25px 0;">Stella, est-ce que tu accepterais d'être ma Valentine,<br>le temps d'une parenthèse à distance ? 🌹</p>
-        <button onclick="ending()">Je prends le risque</button>
-        <button onclick="ending()">Je suis curieuse</button>
+        <button onclick="ending('Je prends le risque')">Je prends le risque</button>
+        <button onclick="ending('Je suis curieuse')">Je suis curieuse</button>
     </div>
 
     <div id="ending" class="hidden">
@@ -164,6 +163,7 @@
 <script>
     let cardsOpened = 0;
     const music = document.getElementById("bgMusic");
+    const formEndpoint = "https://formspree.io/f/mjgewglq";
 
     function start() {
         music.play().catch(e => console.log("L'audio attend un clic"));
@@ -183,12 +183,9 @@
     function chooseCard(num, el) {
         if (el.classList.contains("opened")) return;
         
-        // Si elle essaie d'ouvrir une carte alors qu'elle en a déjà ouvert une, 
-        // et qu'elle n'a pas encore validé le gage pour celle-ci.
         if (cardsOpened >= 1 && !el.dataset.unlocked) {
             document.getElementById("cards").classList.add("hidden");
             document.getElementById("gageSection").classList.remove("hidden");
-            // On stocke quelle carte elle essayait d'ouvrir
             window.pendingCard = {num, el}; 
             return;
         }
@@ -220,20 +217,31 @@
             alert("Handsome mérite une vraie promesse... 😏");
             return;
         }
+
+        // ENVOI À FORMSPREE
+        fetch(formEndpoint, {
+            method: 'POST',
+            body: JSON.stringify({ message: "Nouvelle promesse de Stella", promesse: val }),
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        });
         
-        // On débloque la carte qu'elle voulait voir
         if(window.pendingCard) {
             window.pendingCard.el.dataset.unlocked = "true";
             document.getElementById("gageSection").classList.add("hidden");
             document.getElementById("cards").classList.remove("hidden");
-            document.getElementById("gageText").value = ""; // Reset pour la prochaine fois
-            
-            // On force l'ouverture de la carte maintenant qu'elle a payé
+            document.getElementById("gageText").value = ""; 
             chooseCard(window.pendingCard.num, window.pendingCard.el);
         }
     }
 
-    function ending() {
+    function ending(btnText) {
+        // ENVOI DE LA RÉPONSE FINALE
+        fetch(formEndpoint, {
+            method: 'POST',
+            body: JSON.stringify({ message: "Réponse Valentine Stella", reponse: btnText, statut: "OUI !" }),
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        });
+
         document.getElementById("valentineQuestion").classList.add("hidden");
         document.getElementById("ending").classList.remove("hidden");
     }
